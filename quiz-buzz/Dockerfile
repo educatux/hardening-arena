@@ -2,7 +2,7 @@
 # Contexte de build = dossier parent (diagnostic/) pour embarquer ../commun :
 #   docker compose up -d --build          (depuis quiz-buzz/, voir docker-compose.yml)
 #   docker build -f quiz-buzz/Dockerfile . (depuis diagnostic/)
-FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+FROM node:25-alpine@sha256:bdf2cca6fe3dabd014ea60163eca3f0f7015fbd5c7ee1b0e9ccb4ced6eb02ef4
 ENV NODE_ENV=production PORT=8080
 # Même arborescence que le dépôt : /srv/quiz-buzz + /srv/commun
 WORKDIR /srv/quiz-buzz

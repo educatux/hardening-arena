@@ -1,0 +1,4 @@
+# deploiement/serveur.local — sur le POSTE DU FORMATEUR, non commité. Copier en serveur.local.
+# Alias SSH conseillé (~/.ssh/config) : utilisateur non root avec sudo, accès par clé.
+QUIZ_SERVEUR='formateur@quiz-serveur'
+QUIZ_DOSSIER='/opt/academy'

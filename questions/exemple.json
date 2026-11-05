@@ -1,0 +1,54 @@
+{
+  "titre": "Hardening Arena — Exemple : les réflexes de base",
+  "graine": 3,
+  "questions": [
+    {
+      "theme": "Mots de passe",
+      "question": "Quel est le meilleur moyen de protéger un compte important ?",
+      "bonne": "Un mot de passe unique et long, plus une double authentification",
+      "pieges": ["Le même mot de passe partout, mais très complexe", "Un mot de passe changé chaque semaine", "Le nom de son chat suivi de 123"],
+      "temps": 30,
+      "revision": "Unique : une fuite sur un site ne compromet pas les autres. Long : une phrase de passe résiste mieux qu'un mot court et compliqué. La double authentification arrête l'attaquant qui a volé le mot de passe."
+    },
+    {
+      "theme": "Hameçonnage",
+      "question": "Un mail de « votre banque » demande de cliquer pour « débloquer votre compte ». Le bon réflexe ?",
+      "bonne": "Ne pas cliquer, et passer par l'application ou le site tapé à la main",
+      "pieges": ["Cliquer si le logo de la banque est bien là", "Répondre au mail pour vérifier", "Cliquer, mais ne pas saisir le mot de passe"],
+      "temps": 30,
+      "revision": "Le logo et l'adresse d'expédition se falsifient. L'urgence (« débloquer », « sous 24 h ») est la signature de l'hameçonnage. On ne suit jamais un lien reçu : on va soi-même sur le site connu."
+    },
+    {
+      "theme": "Mises à jour",
+      "question": "Pourquoi installer les mises à jour de sécurité rapidement ?",
+      "bonne": "Elles corrigent des failles déjà connues des attaquants",
+      "pieges": ["Elles accélèrent l'ordinateur", "Elles sont obligatoires par la loi", "Elles suppriment les virus déjà présents"],
+      "temps": 20,
+      "revision": "Une fois le correctif publié, la faille est documentée : les attaquants l'exploitent sur les machines qui ne l'ont pas installé. Retarder une mise à jour, c'est laisser une porte connue ouverte."
+    },
+    {
+      "theme": "Chiffrement",
+      "question": "Le cadenas affiché devant l'adresse d'un site (HTTPS) garantit que...",
+      "bonne": "La connexion est chiffrée avec le site dont l'adresse est affichée",
+      "pieges": ["Le site est honnête et sans danger", "Le site a été vérifié par l'État", "Aucun virus ne peut venir de ce site"],
+      "temps": 30,
+      "revision": "HTTPS protège le trajet (personne ne lit ni ne modifie en route) et prouve qu'on parle bien au domaine affiché. Un site d'hameçonnage peut avoir un cadenas : vérifiez l'adresse, pas seulement le cadenas."
+    },
+    {
+      "theme": "Sauvegardes",
+      "question": "Face à un rançongiciel, quelle sauvegarde sauve vraiment les données ?",
+      "bonne": "Une copie hors ligne ou hors d'atteinte, testée régulièrement",
+      "pieges": ["Une copie sur un second disque toujours branché", "Une copie dans un autre dossier du même ordinateur", "La corbeille de l'ordinateur"],
+      "temps": 30,
+      "revision": "Un rançongiciel chiffre tout ce qu'il atteint, disques branchés et partages réseau compris. Règle 3-2-1 : 3 copies, 2 supports, 1 hors site ou hors ligne. Et une sauvegarde jamais restaurée n'est qu'un espoir."
+    },
+    {
+      "theme": "Moindre privilège",
+      "question": "Pourquoi ne pas utiliser un compte administrateur au quotidien ?",
+      "bonne": "Un programme piégé aurait alors tous les droits sur la machine",
+      "pieges": ["Le compte administrateur est plus lent", "Il est interdit d'en créer un", "L'administrateur ne peut pas naviguer sur Internet"],
+      "temps": 20,
+      "revision": "Ce qu'on lance hérite de nos droits. Avec un compte simple, un logiciel malveillant reste limité ; on n'élève ses droits (sudo, UAC) que pour l'action qui le demande, puis on revient au compte simple."
+    }
+  ]
+}

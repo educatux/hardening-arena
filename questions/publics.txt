@@ -1,0 +1,11 @@
+# Quiz en libre service sur /arena/ (entraînement et vidéoprojecteur, sans mot de passe).
+# Un identifiant par ligne (nom du fichier source sans .json) ; « # » = commentaire.
+#
+# ATTENTION : un quiz listé ici est public, BONNES RÉPONSES COMPRISES (lisibles dans
+# quizzes-publics.js). N'y ajouter un quiz qu'APRÈS l'avoir joué en séance, et jamais
+# un quiz de positionnement (*-positionnement : build.py le refuse).
+#
+# Après modification : python3 questions/build.py, puis deploiement/preparer-seance.sh.
+exemple
+dns-1
+dns-2

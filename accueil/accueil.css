@@ -1,0 +1,32 @@
+/* Hardening Arena — page d'accueil publique et mentions légales (en plus de /commun/bta-quiz.css). */
+.hero{padding:36px 4px 20px}
+.hero h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.05;margin:0 0 .4em;
+  background:var(--bta-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:1.2rem;line-height:1.5;max-width:46em;margin:0 0 6px}
+.small{font-size:.92rem;margin-top:12px}
+.card{margin-bottom:18px}
+.card h2{margin-top:0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.cols h3{margin:.2em 0 .4em}
+.tag{display:inline-block;font-family:var(--bta-font-mono);font-size:.95rem;padding:2px 10px;margin-right:6px;
+  border-radius:var(--bta-radius-pill);background:var(--bta-surface-2);border:1px solid var(--bta-line);color:var(--bta-accent)}
+.punch{margin:18px 0 0;padding:14px 18px;border-left:6px solid var(--bta-accent-2);background:var(--bta-surface-2);
+  border-radius:var(--bta-radius-md);font-weight:700;font-size:1.08rem}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mode{background:var(--bta-surface-2);border:1px solid var(--bta-line);border-radius:var(--bta-radius-lg);padding:18px;display:flex;flex-direction:column}
+.mode .ico{font-size:2rem}
+.mode h3{margin:.3em 0}
+.mode p{flex:1;margin:0 0 12px}
+.mode a,.quizlist a,footer a,.legal a{color:var(--bta-accent);font-weight:700}
+.quizlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.quizlist li{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 14px;background:var(--bta-surface-2);border:1px solid var(--bta-line);border-radius:var(--bta-radius-md)}
+.quizlist .n{color:var(--bta-muted);font-family:var(--bta-font-mono);font-size:.9rem}
+.principes{padding-left:1.2em;margin:0}
+.principes li{margin:8px 0}
+.legal h1{margin-top:.6em}
+.legal h1:first-child{margin-top:0}
+.legal h2{font-size:1.15rem;margin:1.2em 0 .3em}
+footer a{text-decoration:none}
+@media (max-width:860px){ .modes{grid-template-columns:1fr} }
+@media (max-width:680px){ .cols{grid-template-columns:1fr} }

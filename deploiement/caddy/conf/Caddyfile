@@ -1,0 +1,255 @@
+# Hardening Arena (BlueTeam Academy) — reverse proxy Caddy, HTTPS Let's Encrypt automatique.
+#
+# AUCUN SECRET ICI : les {$VAR} sont lus dans l'environnement du conteneur, alimenté par
+# deploiement/.env (droits 600, jamais commité). Hachés bcrypt : « caddy hash-password ».
+#
+# Trois zones :
+#   - PUBLIC              : page d'accueil (/, /accueil/*), habillage partagé (/commun/*) et
+#                           version statique /arena/ (entraînement, vidéoprojecteur), qui ne sert
+#                           QUE les quiz de questions/publics.txt (preparer-seance.sh y remplace
+#                           quizzes.js par quizzes-publics.js : le registre complet n'est jamais
+#                           copié sur le serveur) ;
+#   - realm « quiz »      : entrée des joueurs (/play) — compte de classe (mot de passe de
+#                           SÉANCE, changé par preparer-seance.sh) + compte formateur ;
+#   - realm « animateur » : écran animateur (/animateur, /host*) et tout le reste — compte
+#                           formateur seul.
+#
+# WebSocket : l'upgrade n'est PAS soumis à la Basic auth (voir README, « Pourquoi le
+# WebSocket n'est pas derrière la Basic auth »). Il reste protégé par la clé animateur
+# (HOST_KEY) + le jeton de partie, le code de partie à 6 chiffres (tentatives limitées par
+# IP), le contrôle de l'en-tête Origin côté serveur et la limitation de débit ci-dessous.
+{
+	order rate_limit before basic_auth
+	skip_install_trust   # conteneur en lecture seule : pas de magasin système à modifier
+	servers {
+		# Reverse proxy amont de confiance (MODE_EXPOSITION=amont) : son X-Forwarded-For
+		# est conservé ({client_ip} = vrai client). Sans amont : localhost seulement, donc
+		# tout X-Forwarded-For venant d'un client est écrasé (non usurpable).
+		trusted_proxies static {$AMONT_IP:127.0.0.1/32}
+		# Adresse client = le premier saut NON fiable en partant de la droite de X-Forwarded-For :
+		# un client ne peut pas se forger une adresse en préremplissant l'en-tête.
+		trusted_proxies_strict
+		# Connexions lentes (Slowloris) : en-têtes en 10 s, corps en 30 s, connexion HTTP
+		# inactive fermée après 2 min. Pas de délai d'écriture : il couperait les WebSocket.
+		timeouts {
+			read_header 10s
+			read_body 30s
+			idle 2m
+		}
+		max_header_size 16KB
+	}
+}
+
+# Exposition directe : ce Caddy reçoit Internet et obtient le certificat Let's Encrypt.
+(exposition-direct) {
+}
+
+# Exposition derrière un autre reverse proxy (porte d'entrée WAN déjà occupée) : celui-ci
+# termine le TLS public et relaie ici en HTTPS (certificat de l'AC interne de Caddy, que
+# l'amont épingle). Toute connexion qui ne vient pas de l'amont est coupée.
+(exposition-amont) {
+	tls internal
+	@hors_amont not remote_ip {$AMONT_IP}
+	handle @hors_amont {
+		abort
+	}
+}
+
+{$SITE_ADDRESS} {
+	import exposition-{$MODE_EXPOSITION:direct}
+	encode gzip
+
+	# Aucune requête légitime n'envoie de corps (pages statiques, WebSocket) : plafond bas.
+	request_body {
+		max_size 16KB
+	}
+
+	# En-têtes de sécurité communs à toutes les réponses (les blocs ci-dessous ajoutent leur CSP).
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		-Server
+		-Via
+	}
+
+	# Supervision : /healthz jamais exposé (403). Sur l'hôte, l'état vient du HEALTHCHECK
+	# de l'image : docker inspect -f '{{.State.Health.Status}}' <conteneur quiz>.
+	# (handle et non respond : Caddy trie respond APRÈS les blocs handle, le dernier
+	# « handle » attrape-tout l'aurait avalé.)
+	# Matchers NOMMÉS partout (pas de « handle /chemin ») : les blocs s'évaluent alors dans
+	# l'ordre d'apparition, et le filtre @hors_amont du mode amont passe bien en premier.
+	@healthz path /healthz
+	handle @healthz {
+		respond 403
+	}
+
+	# Anti force brute : plafond par IP, toutes requêtes confondues. 600/min laisse passer
+	# une salle entière derrière la même IP d'école (≈ 10 requêtes par téléphone au
+	# chargement, x2 avec l'aller-retour 401) ; au-delà : 429.
+	# Basic auth = un bcrypt par requête authentifiée, coûteux par construction : plafond dédié
+	# aux requêtes qui portent des identifiants vers une zone protégée (240/min/IP : une classe
+	# derrière le NAT de l'école charge /play et /play.js, ≈ 60 requêtes), en plus du plafond
+	# de CPU des conteneurs (compose.yaml).
+	rate_limit {
+		zone par_ip {
+			key {client_ip}
+			events 600
+			window 1m
+		}
+		zone auth_par_ip {
+			match {
+				header Authorization *
+				not path / /accueil/* /commun/* /favicon.ico /arena /arena/* /healthz
+			}
+			key {client_ip}
+			events 240
+			window 1m
+		}
+	}
+
+	# WebSocket (même chemin « / » pour l'animateur et les joueurs) : sans Basic auth.
+	# « upgrade » doit être un JETON de Connection (comme le vérifie reverse_proxy), pas une
+	# sous-chaîne : sinon « Connection: xUpgradex » ferait passer un GET ordinaire hors Basic
+	# auth. En plus, X-Arena-Ws : Node refuse (404) toute requête HTTP ordinaire qui le porte.
+	@ws {
+		path /
+		header_regexp wsconn Connection (?i)(^|,)\s*upgrade\s*(,|$)
+		header Upgrade websocket
+	}
+	handle @ws {
+		reverse_proxy quiz-buzz:8080 {
+			header_up X-Arena-Ws 1
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	# Entrée des joueurs : mot de passe de séance.
+	@quiz path /play /play/ /play.html /play.js
+	handle @quiz {
+		basic_auth bcrypt "BlueTeam Academy — quiz" {
+			{$CLASSE_USER} {$SEANCE_HASH}
+			formateur {$FORMATEUR_HASH}
+		}
+		reverse_proxy quiz-buzz:8080 {
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	# Habillage partagé (CSS, script d'affichage, logo) : public, rien de secret dedans ;
+	# nécessaire à la page d'accueil et à /arena/.
+	@commun path /commun/* /favicon.ico
+	handle @commun {
+		reverse_proxy quiz-buzz:8080 {
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	# Page d'accueil publique (dossier accueil/) : présentation, liens, mentions légales.
+	# Aucun script ni style inline : CSP sans hachés. Le WebSocket (même chemin « / ») est
+	# exclu explicitement, quel que soit l'ordre d'évaluation des blocs.
+	@accueil {
+		path / /accueil/*
+		not header Upgrade websocket
+	}
+	handle @accueil {
+		uri strip_prefix /accueil
+		header {
+			Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+		}
+		root * /srv/accueil
+		file_server {
+			hide README.md .* *~ *.bak *.orig *.swp
+		}
+	}
+
+	# Version statique (quiz-app/) en LIBRE SERVICE : seulement les quiz publiés (voir en tête).
+	# Le script inline et l'unique attribut style de index.html sont autorisés par HASH
+	# (calculés par preparer-seance.sh), pas par 'unsafe-inline'.
+	redir /arena /arena/ 308
+	# handle (pas handle_path) : tous les blocs sont des « handle », donc mutuellement
+	# exclusifs, le bloc sans matcher étant toujours évalué en dernier.
+	@arena path /arena/*
+	handle @arena {
+		# Garantie posée ICI, quel que soit le contenu du dossier sur le serveur : le registre
+		# servi est toujours le registre PUBLIC (rewrite passe avant uri).
+		rewrite /arena/quizzes.js /arena/quizzes-publics.js
+		uri strip_prefix /arena
+		header {
+			Content-Security-Policy "default-src 'none'; script-src 'self' 'sha256-{$ARENA_SCRIPT_HASH}'; style-src 'self' 'unsafe-hashes' 'sha256-{$ARENA_STYLE_HASH}'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+		}
+		root * /srv/arena
+		file_server {
+			hide README.md .* *~ *.bak *.orig *.swp
+		}
+	}
+
+	# Mesure d'audience : rapport GoAccess (généré chaque nuit depuis les journaux anonymisés,
+	# voir deploiement/stats.sh), réservé au compte formateur. Le rapport GoAccess est un HTML
+	# autonome avec script et styles inline, et ses gabarits (Hogan.js) sont compilés par
+	# new Function : 'unsafe-inline' et 'unsafe-eval' sur CETTE route seulement. « sandbox » isole
+	# le rapport dans une origine opaque : un User-Agent piégé qui passerait l'échappement de
+	# GoAccess ne pourrait agir ni sur le site ni avec la session formateur (GoAccess teste
+	# localStorage avant de s'en servir : le rapport s'affiche quand même).
+	redir /stats /stats/ 308
+	@stats path /stats/*
+	handle @stats {
+		uri strip_prefix /stats
+		basic_auth bcrypt "BlueTeam Academy — animateur" {
+			formateur {$FORMATEUR_HASH}
+		}
+		header Content-Security-Policy "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src 'self' data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		root * /srv/stats
+		file_server
+	}
+
+	# Tout le reste : écran animateur (/animateur, /host.html, /host.js…).
+	handle {
+		basic_auth bcrypt "BlueTeam Academy — animateur" {
+			formateur {$FORMATEUR_HASH}
+		}
+		reverse_proxy quiz-buzz:8080 {
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	# Journal d'accès : fichier (lu par GoAccess pour la mesure d'audience), adresses IP
+	# MASQUÉES dès l'écriture (/24 en IPv4, /48 en IPv6) : aucune adresse complète n'est
+	# conservée. Identifiants et cookies retirés. Rotation : 13 mois au plus (recommandation
+	# CNIL pour la mesure d'audience).
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 20MiB
+			roll_keep 40
+			roll_keep_for 9480h
+		}
+		format filter {
+			wrap json
+			fields {
+				request>remote_ip ip_mask {
+					ipv4 24
+					ipv6 48
+				}
+				request>client_ip ip_mask {
+					ipv4 24
+					ipv6 48
+				}
+				request>headers>X-Forwarded-For delete
+				# Code de partie des liens /play?pin=… : jamais dans les journaux ni dans /stats/.
+				request>uri query {
+					delete pin
+				}
+				request>headers>Authorization delete
+				request>headers>Cookie delete
+			}
+		}
+	}
+}

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardening Arena</title>
+<meta name="description" content="Hardening Arena par BlueTeam Academy : quiz de diagnostic cybersécurité piloté au vidéoprojecteur, score par équipe.">
+<link rel="icon" href="../commun/bta-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../commun/bta-quiz.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bta-header">
+    <div class="bta-brand">
+      <img class="bta-mark" src="../commun/bta-logo.svg" alt="BlueTeam Academy">
+      <div class="bta-name"><span class="bta-game">Hardening Arena</span><span class="bta-by">par BlueTeam <b>Academy</b></span></div>
+    </div>
+    <button class="btn ghost" id="themeBtn" title="Basculer thème clair / sombre">Thème clair / sombre</button>
+  </header>
+  <hr class="bta-rule">
+
+  <p class="err hide" id="loadErr">Fichiers manquants : gardez <code>quiz-app/</code>, <code>commun/</code> et <code>quizzes.js</code> ensemble (voir README).</p>
+
+  <!-- ACCUEIL -->
+  <section id="home" class="card">
+    <h1 id="quizTitle">Hardening Arena</h1>
+    <div class="row">
+      <select id="quizSel" class="grow" aria-label="Choisir le quiz"></select>
+    </div>
+    <p class="muted">Piloté au vidéoprojecteur. Ajoutez les équipes, lancez, lisez chaque question, laissez répondre, puis révélez la bonne réponse et attribuez les points. <span id="qcount"></span></p>
+    <p class="muted hide" id="modHint">Quiz du T0 : le module de chaque question (L1…L6, C1…C6) s'affiche à la révélation. Ici, pas de score individuel : chacun note sur papier les modules des questions ratées. Pour un bilan automatique par apprenant, utilisez <code>quiz-buzz</code> en mode positionnement.</p>
+    <div class="row">
+      <input type="text" id="teamInput" class="grow" placeholder="Nom d'une équipe (ex : Les Durcisseurs)" maxlength="28">
+      <button class="btn" id="addTeam">+ Ajouter l'équipe</button>
+    </div>
+    <div class="chips" id="teamList"></div>
+    <div class="controls">
+      <button class="btn cta" id="startBtn">▶ Démarrer le quiz</button>
+      <button class="btn ghost" id="skipTeams">Jouer sans équipes (juste la correction)</button>
+      <a class="btn ghost" href="entrainement.html">S'entraîner seul</a>
+    </div>
+    <p class="muted" style="margin-top:14px;font-size:.92rem">Raccourcis : <kbd>Espace</kbd>, <kbd>Entrée</kbd> ou <kbd>→</kbd> = révéler, puis question suivante. Tout fonctionne hors-ligne, rien n'est envoyé sur Internet.</p>
+  </section>
+
+  <!-- QUESTION -->
+  <section id="quiz" class="card hide">
+    <div class="qtop">
+      <span class="badge theme" id="themeBadge">Thème</span>
+      <span class="badge" id="qnum">1 / 30</span>
+      <span class="timer" id="timer">20</span>
+    </div>
+    <div class="question" id="qtext"></div>
+    <div class="answers" id="answers"></div>
+    <div class="reveal hide" id="reveal"></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="score" id="scoreRow"></div>
+    <div class="controls">
+      <button class="btn primary" id="revealBtn">Révéler la réponse</button>
+      <button class="btn cta" id="nextBtn" disabled>Question suivante →</button>
+      <button class="btn ghost" id="restartTimer">↻ Relancer le minuteur</button>
+    </div>
+  </section>
+
+  <!-- FIN -->
+  <section id="end" class="card hide">
+    <h1 class="center">Classement final</h1>
+    <div id="rank"></div>
+    <div class="controls center">
+      <button class="btn cta" id="again">Rejouer</button>
+    </div>
+    <p class="muted center">Notez les scores et les thèmes faibles : ce sont les points à reprendre en cours.</p>
+  </section>
+
+  <footer class="muted">Hardening Arena par BlueTeam Academy · appli autonome, hors-ligne, sans dépendance.</footer>
+</div>
+
+<script src="../commun/bta-quiz.js"></script>
+<script src="quizzes.js"></script>
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var QUIZZES = Array.isArray(window.QUIZZES) ? window.QUIZZES : [];
+  if(!window.BTA || !QUIZZES.length){ $('#loadErr').classList.remove('hide'); }
+  if(!window.BTA) return;
+  var B = window.BTA;
+  var DATA = [];
+  var teams = [];               // {name, pts}
+  var idx = 0, revealed = false;
+  var home = $('#home'), quiz = $('#quiz'), end = $('#end');
+  var timer = new B.Timer($('#timer'));
+
+  // thème clair / sombre (mémorisé localement)
+  try{ var saved = localStorage.getItem('ha-theme'); if(saved) document.documentElement.setAttribute('data-theme', saved); }catch(e){}
+  $('#themeBtn').onclick = function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    var nxt = cur==='dark' ? 'light' : cur==='light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', nxt);
+    try{ localStorage.setItem('ha-theme', nxt); }catch(e){}
+  };
+
+  // choix du quiz (registre généré par questions/build.py ; dernier choix mémorisé localement)
+  var sel = $('#quizSel');
+  QUIZZES.forEach(function(qz, i){ var o = B.el('option', '', qz.title); o.value = String(i); sel.appendChild(o); });
+  function pickQuiz(i){
+    var qz = QUIZZES[i] || {title: 'Hardening Arena', questions: []};
+    DATA = qz.questions || [];
+    $('#quizTitle').textContent = qz.title;
+    $('#qcount').textContent = DATA.length ? '('+DATA.length+' questions)' : '(aucune question chargée — vérifiez quizzes.js)';
+    // Quiz du T0 : chaque question indique son module à la révélation (pas de bilan individuel ici).
+    var mods = DATA.some(function(q){ return q.module; });
+    $('#modHint').classList.toggle('hide', !mods);
+    try{ if(qz.id) localStorage.setItem('ha-quiz', qz.id); }catch(e){}
+  }
+  var start = 0;
+  try{ var last = localStorage.getItem('ha-quiz'); QUIZZES.forEach(function(qz, i){ if(qz.id===last) start = i; }); }catch(e){}
+  sel.value = String(start); pickQuiz(start);
+  sel.onchange = function(){ pickQuiz(Number(sel.value)); };
+
+  // équipes
+  function renderTeams(){
+    var el = $('#teamList'); B.clear(el);
+    teams.forEach(function(t, i){
+      var c = B.el('span', 'chip', t.name);
+      var b = B.el('button', '', '×'); b.title = 'Retirer'; b.setAttribute('aria-label', 'Retirer '+t.name);
+      b.onclick = function(){ teams.splice(i, 1); renderTeams(); };
+      c.appendChild(b); el.appendChild(c);
+    });
+  }
+  function addTeam(){
+    var v = $('#teamInput').value.replace(/\s+/g, ' ').trim().slice(0, 28); if(!v) return;
+    teams.push({name: v, pts: 0}); $('#teamInput').value = ''; $('#teamInput').focus(); renderTeams();
+  }
+  $('#addTeam').onclick = addTeam;
+  $('#teamInput').addEventListener('keydown', function(e){ if(e.key==='Enter') addTeam(); });
+
+  function renderScoreRow(){
+    var el = $('#scoreRow'); B.clear(el);
+    teams.forEach(function(t){
+      var d = B.el('div', 'scoreitem');
+      var p = B.el('span', 'pts', t.pts);
+      var add = B.el('span', 'add');
+      [[1,'+1'],[2,'+2'],[-1,'−1']].forEach(function(v){
+        var b = B.el('button', '', v[1]);
+        b.title = (v[0]>0 ? 'Ajouter ' : 'Retirer ')+Math.abs(v[0])+' point(s) — '+t.name;
+        b.onclick = function(){ t.pts = Math.max(0, t.pts+v[0]); p.textContent = t.pts; };
+        add.appendChild(b);
+      });
+      d.appendChild(B.el('span', '', t.name)); d.appendChild(p); d.appendChild(add); el.appendChild(d);
+    });
+  }
+
+  function showQuestion(){
+    var q = DATA[idx]; revealed = false;
+    $('#themeBadge').textContent = q.theme;
+    $('#qnum').textContent = (idx+1)+' / '+DATA.length;
+    $('#qtext').textContent = q.q;
+    var a = $('#answers'); B.clear(a);
+    q.answers.forEach(function(txt, i){ a.appendChild(B.tile('div', 'ans', i, txt)); });
+    $('#reveal').classList.add('hide');
+    $('#revealBtn').disabled = false; $('#nextBtn').disabled = true;
+    $('#bar').style.width = (idx/DATA.length*100)+'%';
+    renderScoreRow();
+    timer.start(q.time || 20);
+  }
+
+  function doReveal(){
+    if(revealed) return; revealed = true; timer.stop();
+    var q = DATA[idx], nodes = $('#answers').children;
+    for(var i=0; i<nodes.length; i++) nodes[i].classList.add(i===q.correct ? 'good' : 'dim');
+    B.reveal($('#reveal'), q.answers[q.correct], q.point, q.module);
+    $('#revealBtn').disabled = true; $('#nextBtn').disabled = false;
+    $('#bar').style.width = ((idx+1)/DATA.length*100)+'%';
+  }
+
+  function next(){
+    if(!revealed){ doReveal(); return; }      // 1er appui = révéler
+    if(idx < DATA.length-1){ idx++; showQuestion(); } else finish();
+  }
+
+  function finish(){
+    timer.stop(); quiz.classList.add('hide'); end.classList.remove('hide');
+    var r = $('#rank');
+    if(!teams.length){ B.clear(r); r.appendChild(B.el('div', 'lbrow', "Pas d'équipes — relancez avec des équipes pour un classement.")); return; }
+    var rows = teams.slice().sort(function(a,b){ return b.pts-a.pts; }).map(function(t){ return {name:t.name, score:t.pts}; });
+    B.leaderboard(r, rows, {podium: true, unit: 'pts'});
+  }
+
+  function startQuiz(){
+    if(!DATA.length){ alert('Aucune question chargée. Vérifiez que quizzes.js est bien présent à côté de index.html.'); return; }
+    idx = 0; home.classList.add('hide'); end.classList.add('hide'); quiz.classList.remove('hide'); showQuestion();
+  }
+  $('#startBtn').onclick = startQuiz;
+  $('#skipTeams').onclick = function(){ teams = []; renderTeams(); startQuiz(); };
+  $('#revealBtn').onclick = doReveal;
+  $('#nextBtn').onclick = next;
+  $('#restartTimer').onclick = function(){ if(!revealed) timer.start(DATA[idx].time || 20); };
+  $('#again').onclick = function(){ teams.forEach(function(t){ t.pts = 0; }); end.classList.add('hide'); home.classList.remove('hide'); renderTeams(); };
+
+  document.addEventListener('keydown', function(e){
+    if(quiz.classList.contains('hide')) return;
+    if(e.key===' ' || e.key==='Enter' || e.key==='ArrowRight'){ e.preventDefault(); next(); }
+  });
+
+})();
+</script>
+</body>
+</html>

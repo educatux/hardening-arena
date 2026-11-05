@@ -1,0 +1,30 @@
+# Hardening Arena (buzz) par BlueTeam Academy — docker compose up -d --build
+services:
+  quiz-buzz:
+    build:
+      context: ..                    # diagnostic/ (pour inclure ../commun)
+      dockerfile: quiz-buzz/Dockerfile
+    image: hardening-arena-buzz:local
+    container_name: hardening-arena-buzz
+    restart: unless-stopped
+    ports:
+      # Par défaut : uniquement ce poste (ou un reverse proxy local).
+      - "127.0.0.1:8080:8080"
+      # Pour que les téléphones de la salle se connectent directement, remplacez par
+      # l'IP de cette machine sur le Wi-Fi/LAN (ex. "192.168.1.20:8080:8080") ou "8080:8080".
+    environment:
+      PORT: "8080"
+      # Clé animateur : fixez-la dans un fichier .env (HOST_KEY=...) ; vide = générée à chaque
+      # démarrage et affichée par « docker compose logs quiz-buzz ».
+      HOST_KEY: "${HOST_KEY:-}"
+      # TRUST_PROXY: "1"             # seulement derrière un reverse proxy (X-Forwarded-For)
+      # Quiz proposés à l'animateur : ceux de l'image (quiz-buzz/quizzes/). Pour en fournir
+      # d'autres sans reconstruire, montez un dossier en lecture seule et pointez QUIZZES_DIR :
+      # QUIZZES_DIR: "/srv/quizzes"
+    # volumes:
+    #   - ./quizzes:/srv/quizzes:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 256m

@@ -1,0 +1,19 @@
+# Dépendances et sorties générées localement
+node_modules/
+kahoot/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Jamais versionnés : secrets et configuration de l'instance
+.env
+.env.*
+deploiement/serveur.local
+
+# Données d'apprenants (exports du mode positionnement)
+*.csv
+
+# Outils locaux
+.claude/
+.agents/
+.devbox/

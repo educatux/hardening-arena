@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Hardening Arena — Animateur</title>
+<link rel="icon" href="/commun/bta-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/commun/bta-quiz.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bta-header">
+    <div class="bta-brand">
+      <img class="bta-mark" src="/commun/bta-logo.svg" alt="BlueTeam Academy">
+      <div class="bta-name"><span class="bta-game">Hardening Arena</span><span class="bta-by">par BlueTeam <b>Academy</b></span></div>
+      <span class="bta-role">Animateur</span>
+    </div>
+  </header>
+  <hr class="bta-rule">
+
+  <!-- Clé animateur (si absente de l'URL #cle=...) -->
+  <section id="keyCard" class="card hide">
+    <h1>Clé animateur</h1>
+    <p class="muted">Elle s'affiche dans les journaux du serveur au démarrage (variable <code>HOST_KEY</code>). Elle empêche les joueurs de créer ou piloter une partie.</p>
+    <div class="row">
+      <input type="text" id="keyInput" class="grow" autocomplete="off" spellcheck="false" maxlength="128" placeholder="clé animateur">
+      <button class="btn cta" id="keyBtn">Valider</button>
+    </div>
+    <p class="err" id="keyErr"></p>
+  </section>
+
+  <!-- Choix du quiz (liste envoyée par le serveur, sans les réponses) -->
+  <section id="pickCard" class="card hide">
+    <h1>Quel quiz lancer ?</h1>
+    <div class="row">
+      <select id="quizSel" class="grow" aria-label="Choisir le quiz"></select>
+      <button class="btn cta" id="pickBtn">Créer la partie</button>
+    </div>
+    <div class="setting">
+      <label for="modeSel">Mode</label>
+      <select id="modeSel" aria-label="Mode de jeu">
+        <option value="classique" selected>Classique : équipes, bonus de vitesse, classement</option>
+        <option value="positionnement">Positionnement : individuel, 1 point par bonne réponse, bilan par module</option>
+      </select>
+    </div>
+    <div class="setting hide" id="posSettings">
+      <label for="seuilIn">Réussite à</label>
+      <input type="number" id="seuilIn" min="1" max="100" step="1" value="60" aria-label="Seuil de réussite en pourcentage"> %
+      <label for="seuilModIn">· module à revoir sous</label>
+      <input type="number" id="seuilModIn" min="1" max="100" step="1" value="50" aria-label="Seuil par module en pourcentage"> %
+    </div>
+    <p class="muted" id="pickInfo"></p>
+  </section>
+
+  <section id="lobby" class="card hide">
+    <p class="muted center" id="lobbyTitle"></p>
+    <p class="joinline">Sur leur téléphone, <span id="joinWho">les équipes</span> vont sur <b id="joinUrl">…/play</b></p>
+    <p class="muted center hide" id="lobbyPos">Positionnement individuel : chacun répond seul, avec son prénom. Pas de note : le bilan indique les modules du T0 à faire.</p>
+    <p class="muted center">Code de la partie</p>
+    <div class="pin" id="pin">······</div>
+    <div class="chips center" id="teams"></div>
+    <p class="muted center" id="waiting">En attente…</p>
+    <div class="controls center">
+      <button class="btn cta" id="startBtn" disabled>▶ Démarrer</button>
+    </div>
+  </section>
+
+  <section id="game" class="card hide">
+    <div class="qtop">
+      <span class="badge theme" id="theme">Thème</span>
+      <span class="badge" id="qnum">1 / 30</span>
+      <span class="timer" id="timer">20</span>
+    </div>
+    <div class="question" id="qtext"></div>
+    <div class="answers" id="answers"></div>
+    <div class="reveal hide" id="reveal"></div>
+    <div class="answered" id="answered"></div>
+    <div class="lb compact" id="lb"></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="controls center">
+      <button class="btn primary" id="revealBtn">Révéler</button>
+      <button class="btn cta" id="nextBtn" disabled>Suivant →</button>
+      <button class="btn ghost" id="endBtn">Terminer la partie</button>
+    </div>
+  </section>
+
+  <section id="end" class="card hide">
+    <h1 class="center">Classement final</h1>
+    <div id="finalLb"></div>
+    <div class="controls center"><button class="btn cta" id="newBtn">Nouvelle partie</button></div>
+  </section>
+
+  <!-- Fin du mode positionnement : bilan réservé à l'animateur (pas à projeter tel quel) -->
+  <section id="posEnd" class="card hide">
+    <h1>Bilan du positionnement</h1>
+    <p class="muted" id="posTitle"></p>
+    <p class="summary" id="posSummary"></p>
+    <p class="muted" id="posModules"></p>
+    <div class="setting">
+      <label for="endSeuil">Réussite à</label>
+      <input type="number" id="endSeuil" min="1" max="100" step="1" value="60" aria-label="Seuil de réussite en pourcentage"> %
+      <label for="endSeuilMod">· module à revoir sous</label>
+      <input type="number" id="endSeuilMod" min="1" max="100" step="1" value="50" aria-label="Seuil par module en pourcentage"> %
+    </div>
+    <div class="tablewrap">
+      <table class="bilan">
+        <thead><tr><th>Apprenant</th><th class="num">Score</th><th class="num">%</th><th>Modules à revoir</th></tr></thead>
+        <tbody id="posRows"></tbody>
+      </table>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="csvBtn">Exporter le bilan (CSV)</button>
+      <button class="btn cta" id="newBtn2">Nouvelle partie</button>
+    </div>
+    <p class="muted">Données d'apprenants : gardez l'export hors du dépôt.</p>
+  </section>
+
+  <p class="err center" id="connErr"></p>
+</div>
+<script src="/commun/bta-quiz.js"></script>
+<script src="/host.js"></script>
+</body>
+</html>

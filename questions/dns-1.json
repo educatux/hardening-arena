@@ -1,0 +1,348 @@
+{
+  "titre": "Hardening Arena — DNS (1/2) : les bases, les attaques, DNSSEC",
+  "graine": 12,
+  "questions": [
+    {
+      "theme": "Rôle du DNS",
+      "module": "D1",
+      "question": "Le rôle du DNS, c'est surtout de...",
+      "bonne": "Traduire un nom en données utiles (adresse IP, serveur mail…)",
+      "pieges": ["Chiffrer les connexions web", "Attribuer les adresses IP aux machines", "Router les paquets entre réseaux"],
+      "temps": 30,
+      "revision": "Le DNS est l'annuaire d'Internet : un nom donne une adresse, un serveur de messagerie, une clé, une règle. Attribuer les IP, c'est DHCP ; acheminer les paquets, c'est le routage."
+    },
+    {
+      "theme": "Acteurs",
+      "module": "D1",
+      "question": "Un résolveur récursif (celui de la box, du FAI, ou 1.1.1.1)...",
+      "bonne": "Cherche la réponse pour le client, de serveur en serveur",
+      "pieges": ["Détient la zone d'un domaine", "Chiffre toutes les requêtes DNS", "Vend les noms de domaine"],
+      "temps": 30,
+      "revision": "Deux métiers : le résolveur (il pose les questions et garde les réponses en cache) et le serveur faisant autorité (il détient la zone et répond pour elle)."
+    },
+    {
+      "theme": "Acteurs",
+      "module": "D1",
+      "question": "Le serveur faisant autorité pour exemple.fr...",
+      "bonne": "Détient et publie la zone exemple.fr",
+      "pieges": ["Résout tous les noms d'Internet pour ses clients", "Est forcément chez le FAI du visiteur", "Sert uniquement aux adresses IPv6"],
+      "temps": 30,
+      "revision": "La zone, c'est la liste des enregistrements du domaine. Elle est publiée par ses serveurs faisant autorité, ceux listés dans les enregistrements NS."
+    },
+    {
+      "theme": "Résolution",
+      "module": "D1",
+      "question": "Pour trouver www.exemple.fr sans cache, le résolveur interroge dans l'ordre...",
+      "bonne": "La racine, puis les serveurs de .fr, puis ceux d'exemple.fr",
+      "pieges": ["exemple.fr, puis .fr, puis la racine", "Uniquement le serveur de son FAI", "Google, qui connaît tous les noms"],
+      "temps": 30,
+      "revision": "Le DNS est un arbre : la racine (le point final, « . ») délègue .fr, .fr délègue exemple.fr. Chaque niveau répond « demandez plutôt à ces serveurs-là »."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "L'enregistrement AAAA contient...",
+      "bonne": "Une adresse IPv6",
+      "pieges": ["Une adresse IPv4", "Un alias vers un autre nom", "Un serveur de messagerie"],
+      "temps": 30,
+      "revision": "A = IPv4 (4 octets), AAAA = IPv6 (16 octets, quatre fois plus : d'où les quatre A). Un nom peut avoir les deux."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "Un enregistrement CNAME, c'est...",
+      "bonne": "Un alias : ce nom pointe vers un autre nom",
+      "pieges": ["Une adresse IP de secours", "Le nom du propriétaire du domaine", "Un enregistrement de messagerie"],
+      "temps": 30,
+      "revision": "CNAME : « www.exemple.fr est en fait monsite.hebergeur.net ». Interdit à la racine de la zone et seul sur son nom. Un CNAME oublié vers un service supprimé est un danger (module D2)."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "L'enregistrement MX d'un domaine indique...",
+      "bonne": "Les serveurs qui reçoivent son courrier",
+      "pieges": ["Son serveur web principal", "Son serveur DNS maître", "La taille maximale des mails"],
+      "temps": 30,
+      "revision": "MX = Mail eXchanger, avec une priorité : le plus petit nombre est essayé en premier. Pas de MX : le courrier va à l'adresse du domaine lui-même (ou nulle part, cf. Null MX)."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "Les enregistrements NS d'une zone indiquent...",
+      "bonne": "Les serveurs faisant autorité pour cette zone",
+      "pieges": ["Les serveurs de noms des visiteurs", "Les noms des administrateurs", "Les sous-domaines interdits"],
+      "temps": 30,
+      "revision": "NS = Name Server. Qui contrôle les NS d'un domaine contrôle tout le domaine : site, mail, certificats. C'est ce que vise un détournement (module D2)."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "Aujourd'hui, les enregistrements TXT servent surtout à...",
+      "bonne": "Publier des règles et des preuves (SPF, DMARC, vérifications)",
+      "pieges": ["Stocker des commentaires sans effet", "Afficher un message aux visiteurs", "Remplacer les enregistrements A"],
+      "temps": 30,
+      "revision": "Le TXT est devenu le couteau suisse : politique anti-usurpation du mail (SPF, DMARC, DKIM), preuves de propriété pour Google, Microsoft, Let's Encrypt (défi dns-01)."
+    },
+    {
+      "theme": "Enregistrements",
+      "module": "D1",
+      "question": "Un enregistrement PTR sert à...",
+      "bonne": "Retrouver le nom à partir d'une adresse IP (DNS inverse)",
+      "pieges": ["Pointer vers la page d'accueil", "Protéger le domaine contre le vol", "Stocker un mot de passe"],
+      "temps": 30,
+      "revision": "DNS inverse, sous in-addr.arpa (IPv4) et ip6.arpa (IPv6). Utile aux journaux et au mail : beaucoup de serveurs refusent un expéditeur sans PTR cohérent."
+    },
+    {
+      "theme": "Cache",
+      "module": "D1",
+      "question": "Le TTL d'un enregistrement fixe...",
+      "bonne": "Combien de temps les résolveurs peuvent le garder en cache",
+      "pieges": ["Sa date d'expiration définitive", "Le nombre de serveurs qui le publient", "Sa priorité par rapport aux autres"],
+      "temps": 30,
+      "revision": "TTL en secondes. Long : moins de requêtes, mais une erreur (ou un empoisonnement) dure longtemps. On baisse le TTL quelques jours avant une migration."
+    },
+    {
+      "theme": "Outils",
+      "module": "D1",
+      "question": "Quelle commande affiche les serveurs de messagerie d'exemple.fr ?",
+      "bonne": "dig MX exemple.fr",
+      "pieges": ["ping exemple.fr", "dig A mail", "curl exemple.fr:25"],
+      "temps": 30,
+      "revision": "dig <TYPE> <nom> ; +short pour la réponse seule ; @1.1.1.1 pour choisir le résolveur ; +trace pour suivre la résolution depuis la racine. nslookup existe aussi, en moins précis."
+    },
+    {
+      "theme": "Transport",
+      "module": "D1",
+      "question": "Le DNS classique circule surtout en...",
+      "bonne": "UDP, port 53 (TCP pour les grosses réponses)",
+      "pieges": ["TCP, port 443 uniquement", "TCP, port 25", "UDP, port 22"],
+      "temps": 30,
+      "revision": "UDP : rapide, sans connexion… et donc facile à usurper (module D2). TCP 53 pour les réponses trop grosses et les transferts de zone. Versions chiffrées : DoT (853), DoH (443)."
+    },
+    {
+      "theme": "Zone",
+      "module": "D1",
+      "question": "Le SOA d'une zone contient notamment...",
+      "bonne": "Le numéro de série de la zone et ses délais de mise à jour",
+      "pieges": ["Les adresses IP de tous les postes", "Le certificat TLS du site", "La liste des utilisateurs"],
+      "temps": 30,
+      "revision": "SOA = Start Of Authority. Le numéro de série doit augmenter à chaque modification : sinon les serveurs secondaires ne se mettent pas à jour (erreur classique)."
+    },
+    {
+      "theme": "Poste",
+      "module": "D1",
+      "question": "Le fichier /etc/hosts d'un poste Linux...",
+      "bonne": "Est consulté avant le DNS sur la plupart des systèmes",
+      "pieges": ["N'est plus jamais lu", "Ne sert qu'aux adresses IPv6", "Est réécrit par le DNS à chaque démarrage"],
+      "temps": 30,
+      "revision": "Ordre fixé par /etc/nsswitch.conf (« hosts: files dns »). Vous l'avez utilisé au TP. Un malware qui le modifie redirige des noms sans toucher au DNS : à surveiller."
+    },
+    {
+      "theme": "Reconnaissance",
+      "module": "D2",
+      "question": "Un serveur autorise le transfert de zone (AXFR) à tout le monde. L'attaquant obtient...",
+      "bonne": "La liste complète des noms de la zone, internes compris",
+      "pieges": ["Le mot de passe de l'administrateur", "Le contrôle du domaine", "Rien d'utile"],
+      "temps": 30,
+      "revision": "AXFR sert à copier la zone vers les serveurs secondaires. Ouvert à tous, il livre la carte du réseau (vpn, intranet, test…). À limiter aux secondaires (et signer avec TSIG)."
+    },
+    {
+      "theme": "Empoisonnement",
+      "module": "D2",
+      "question": "L'empoisonnement de cache DNS, c'est...",
+      "bonne": "Faire mémoriser une fausse réponse à un résolveur",
+      "pieges": ["Saturer un serveur DNS de requêtes", "Voler un nom de domaine chez le registrar", "Lire les requêtes DNS des voisins"],
+      "temps": 30,
+      "revision": "Une fausse adresse en cache : tous les clients du résolveur partent chez l'attaquant, pendant toute la durée du TTL. En HTTPS, le navigateur alerte (pas de certificat valide pour ce nom) : c'est le TLS qui rattrape le DNS."
+    },
+    {
+      "theme": "Empoisonnement",
+      "module": "D2",
+      "question": "Pourquoi une réponse DNS classique est-elle facile à falsifier ?",
+      "bonne": "Rien ne l'authentifie : seuls un identifiant et un port la protègent",
+      "pieges": ["Elle est chiffrée avec une clé faible", "Elle passe toujours par le Wi-Fi", "Les serveurs DNS ne vérifient pas les mots de passe"],
+      "temps": 30,
+      "revision": "Un résolveur accepte la première réponse qui correspond à sa question (identifiant de 16 bits, port, nom). Un attaquant qui devine assez vite gagne. La vraie parade : DNSSEC (module D3)."
+    },
+    {
+      "theme": "Empoisonnement",
+      "module": "D2",
+      "question": "La faille Kaminsky (2008) a été corrigée en urgence par...",
+      "bonne": "Le tirage aléatoire du port source des requêtes",
+      "pieges": ["Le chiffrement du DNS", "L'abandon d'UDP", "L'obligation de DNSSEC"],
+      "temps": 30,
+      "revision": "Dan Kaminsky a montré qu'on pouvait empoisonner un résolveur en quelques secondes. Correctif coordonné de tous les éditeurs (juillet 2008) : port source aléatoire. Une rustine : DNSSEC est la solution de fond."
+    },
+    {
+      "theme": "Détournement",
+      "module": "D2",
+      "question": "Un attaquant entre dans votre compte chez le registrar (bureau d'enregistrement). Il peut...",
+      "bonne": "Changer les serveurs NS et prendre tout le domaine",
+      "pieges": ["Seulement lire vos factures", "Rien : le DNS est protégé par le serveur", "Seulement modifier le site web"],
+      "temps": 30,
+      "revision": "Avec les NS, il contrôle le site, le mail, et peut obtenir de vrais certificats. Parades : double authentification, verrou du registre (registry lock), surveillance des changements."
+    },
+    {
+      "theme": "Prise de sous-domaine",
+      "module": "D2",
+      "question": "shop.exemple.fr est un CNAME vers un service cloud supprimé. Le risque ?",
+      "bonne": "Quelqu'un recrée ce service et prend le contrôle de shop.exemple.fr",
+      "pieges": ["Aucun : le nom ne répond plus", "Le domaine expire plus vite", "Le DNS devient plus lent"],
+      "temps": 30,
+      "revision": "« Subdomain takeover » : le CNAME pendant pointe vers un nom que n'importe qui peut réclamer chez l'hébergeur. Règle : on supprime l'enregistrement DNS AVANT ou AVEC la ressource."
+    },
+    {
+      "theme": "Exfiltration",
+      "module": "D2",
+      "question": "Pourquoi un malware exfiltre-t-il parfois des données par des requêtes DNS ?",
+      "bonne": "Le DNS sort presque toujours, même d'un réseau filtré",
+      "pieges": ["Le DNS est chiffré par défaut", "Le DNS va plus vite que HTTPS", "Les antivirus ne lisent que le DNS"],
+      "temps": 30,
+      "revision": "Tunnel DNS : données encodées dans des sous-domaines (aGVsbG8.attaquant.com). Indices : noms longs et aléatoires, volume anormal vers un domaine. Parade : résolveur interne obligatoire et journalisé."
+    },
+    {
+      "theme": "Amplification",
+      "module": "D2",
+      "question": "Un résolveur ouvert à tout Internet peut servir à attaquer un tiers par...",
+      "bonne": "Amplification : petite requête usurpée, grosse réponse vers la victime",
+      "pieges": ["Vol des mots de passe de la victime", "Empoisonnement du DNS de la victime", "Chiffrement des fichiers de la victime"],
+      "temps": 30,
+      "revision": "L'attaquant envoie des requêtes avec l'adresse de la victime comme source ; les réponses, bien plus grosses, inondent la victime (déni de service). Un résolveur ne répond qu'à ses clients."
+    },
+    {
+      "theme": "Défense",
+      "module": "D2",
+      "question": "Bloquer le port 53 sortant, sauf pour le résolveur de l'entreprise, permet...",
+      "bonne": "D'obliger les postes à passer par un DNS surveillé",
+      "pieges": ["De chiffrer le DNS", "D'accélérer la navigation", "De supprimer le besoin de DNS"],
+      "temps": 30,
+      "revision": "Un seul chemin de sortie pour le DNS : on journalise, on filtre (domaines malveillants), on repère les tunnels. Attention à DoH (port 443), qui contourne cette règle (module D3)."
+    },
+    {
+      "theme": "DNSSEC",
+      "module": "D3",
+      "question": "DNSSEC apporte aux réponses DNS...",
+      "bonne": "L'authenticité et l'intégrité (elles sont signées)",
+      "pieges": ["Le chiffrement", "L'anonymat", "Une résolution plus rapide"],
+      "temps": 30,
+      "revision": "DNSSEC signe les enregistrements : le résolveur vérifie qu'ils viennent bien du propriétaire de la zone et n'ont pas été modifiés. Il ne cache rien : tout reste lisible."
+    },
+    {
+      "theme": "DNSSEC",
+      "module": "D3",
+      "question": "Avec DNSSEC, un ensemble d'enregistrements est accompagné de...",
+      "bonne": "Un RRSIG : sa signature",
+      "pieges": ["Un DS", "Un NSEC", "Un SOA"],
+      "temps": 30,
+      "revision": "RRSIG = signature d'un ensemble (tous les A d'un nom, par exemple), avec une date de début et de fin. Une signature expirée = réponse refusée : il faut re-signer régulièrement."
+    },
+    {
+      "theme": "DNSSEC",
+      "module": "D3",
+      "question": "L'enregistrement DNSKEY publie...",
+      "bonne": "Les clés publiques de la zone",
+      "pieges": ["La clé privée de la zone", "Le certificat TLS du site", "Le mot de passe du registrar"],
+      "temps": 30,
+      "revision": "Comme au TP PKI : on publie la clé publique, la clé privée reste chez le propriétaire (idéalement hors du serveur public). Le résolveur vérifie les RRSIG avec ces DNSKEY."
+    },
+    {
+      "theme": "Chaîne",
+      "module": "D3",
+      "question": "Le DS, publié dans la zone parente (.fr), sert à...",
+      "bonne": "Relier la zone à sa parente : c'est l'empreinte de sa clé",
+      "pieges": ["Désactiver DNSSEC", "Signer les e-mails", "Lister les sous-domaines"],
+      "temps": 30,
+      "revision": "Chaîne de confiance : la racine garantit .fr (DS de .fr), .fr garantit exemple.fr (DS d'exemple.fr). Exactement l'idée racine → intermédiaire → feuille du TP PKI."
+    },
+    {
+      "theme": "Chaîne",
+      "module": "D3",
+      "question": "Pour DNSSEC, l'ancre de confiance des résolveurs est...",
+      "bonne": "La clé de la zone racine",
+      "pieges": ["Le certificat du site visité", "Le serveur DNS du FAI", "Une AC publique comme Let's Encrypt"],
+      "temps": 30,
+      "revision": "Le résolveur connaît d'avance UNE clé : celle de la racine (comme la racine dans le magasin du navigateur). Elle a été changée pour la première fois en octobre 2018."
+    },
+    {
+      "theme": "Clés",
+      "module": "D3",
+      "question": "Pourquoi une zone DNSSEC a-t-elle souvent deux clés, KSK et ZSK ?",
+      "bonne": "La KSK signe les clés et change rarement ; la ZSK signe les données",
+      "pieges": ["Une pour IPv4, une pour IPv6", "Une pour le web, une pour le mail", "Par sécurité, on signe tout deux fois"],
+      "temps": 30,
+      "revision": "La KSK est liée au DS de la parente : la changer demande une action chez le registrar. La ZSK change souvent sans toucher à la parente. Même logique que racine hors ligne / intermédiaire."
+    },
+    {
+      "theme": "Non-existence",
+      "module": "D3",
+      "question": "Les enregistrements NSEC ou NSEC3 servent à...",
+      "bonne": "Prouver, de façon signée, qu'un nom n'existe pas",
+      "pieges": ["Chiffrer la zone", "Accélérer les réponses", "Bloquer les attaques par amplification"],
+      "temps": 30,
+      "revision": "Sans eux, un attaquant pourrait faire croire qu'un nom n'existe pas. Effet secondaire de NSEC : on peut énumérer toute la zone (« zone walking ») ; NSEC3 hache les noms pour compliquer."
+    },
+    {
+      "theme": "Validation",
+      "module": "D3",
+      "question": "Dans une réponse de dig, le drapeau « ad » signifie...",
+      "bonne": "Le résolveur a validé la signature DNSSEC",
+      "pieges": ["La réponse vient du serveur faisant autorité", "La réponse est chiffrée", "Le domaine contient de la publicité"],
+      "temps": 30,
+      "revision": "ad = Authenticated Data. Ne pas confondre avec aa = Authoritative Answer (le serveur fait autorité). Essayez : dig +dnssec <nom> @1.1.1.1 et regardez la ligne « flags »."
+    },
+    {
+      "theme": "Validation",
+      "module": "D3",
+      "question": "Un résolveur validant reçoit une signature DNSSEC invalide. Il répond...",
+      "bonne": "SERVFAIL : le nom devient introuvable",
+      "pieges": ["La réponse, avec un avertissement", "NXDOMAIN : le nom n'existe pas", "Une adresse de secours"],
+      "temps": 30,
+      "revision": "DNSSEC échoue fermé : mieux vaut pas de réponse qu'une fausse. Revers : une erreur de signature (clé changée, signatures expirées) coupe tout le domaine. D'où des pannes célèbres."
+    },
+    {
+      "theme": "Confidentialité",
+      "module": "D3",
+      "question": "Avec DNSSEC seul, qui peut lire vos requêtes DNS ?",
+      "bonne": "Tout le réseau sur le chemin : elles circulent en clair",
+      "pieges": ["Personne, elles sont signées", "Seulement le registrar", "Seulement le serveur faisant autorité"],
+      "temps": 30,
+      "revision": "Signer n'est pas chiffrer (même idée qu'au quiz PKI). Le Wi-Fi public, le FAI, un proxy voient les noms demandés. Pour les cacher : DoT ou DoH."
+    },
+    {
+      "theme": "Chiffrement",
+      "module": "D3",
+      "question": "DNS over TLS (DoT) utilise le port...",
+      "bonne": "853",
+      "pieges": ["53", "443", "8443"],
+      "temps": 30,
+      "revision": "DoT = DNS dans un tunnel TLS, sur un port dédié : facile à repérer et à autoriser (ou bloquer) en entreprise. Utilisé par Android (« DNS privé »)."
+    },
+    {
+      "theme": "Chiffrement",
+      "module": "D3",
+      "question": "DNS over HTTPS (DoH) est difficile à contrôler en entreprise parce qu'il...",
+      "bonne": "Se fond dans le trafic HTTPS, sur le port 443",
+      "pieges": ["Utilise un port aléatoire", "N'est jamais chiffré", "Ne fonctionne qu'en IPv6"],
+      "temps": 30,
+      "revision": "Un navigateur en DoH contourne le résolveur de l'entreprise (et sa surveillance). Parades : politique des navigateurs (GPO), domaine « canari » use-application-dns.net pour Firefox, filtrage des résolveurs DoH connus."
+    },
+    {
+      "theme": "Synthèse",
+      "module": "D3",
+      "question": "DNSSEC d'un côté, DoT/DoH de l'autre, sont...",
+      "bonne": "Complémentaires : l'un authentifie les données, l'autre protège le trajet",
+      "pieges": ["Deux noms pour la même chose", "Incompatibles entre eux", "Remplacés par HTTPS"],
+      "temps": 30,
+      "revision": "DoH protège le trajet poste → résolveur. DNSSEC prouve que la réponse vient du propriétaire de la zone, quel que soit le trajet. Il faut les deux."
+    },
+    {
+      "theme": "Adoption",
+      "module": "D3",
+      "question": "Pourquoi DNSSEC reste-t-il peu déployé ?",
+      "bonne": "Une erreur de clé ou de signature coupe tout le domaine",
+      "pieges": ["Il est payant", "Il est interdit en France", "Il divise la vitesse d'Internet par deux"],
+      "temps": 30,
+      "revision": "La peur de la panne (signatures à renouveler, rotation des clés, DS chez le registrar) freine. Aujourd'hui, beaucoup d'hébergeurs DNS signent en un clic. Vous le vérifierez en audit."
+    }
+  ]
+}

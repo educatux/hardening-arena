@@ -1,0 +1,19 @@
+{
+  "name": "hardening-arena-buzz",
+  "version": "1.0.0",
+  "description": "Hardening Arena par BlueTeam Academy : serveur de quiz buzz multi-téléphones, auto-hébergeable.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "private": true
+}

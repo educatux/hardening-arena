@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Hardening Arena — Joueur</title>
+<link rel="icon" href="/commun/bta-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/commun/bta-quiz.css">
+</head>
+<body>
+<div class="wrap narrow">
+  <header class="bta-header">
+    <div class="bta-brand">
+      <img class="bta-mark" src="/commun/bta-logo.svg" alt="BlueTeam Academy">
+      <div class="bta-name"><span class="bta-game">Hardening Arena</span><span class="bta-by">par BlueTeam <b>Academy</b></span></div>
+    </div>
+  </header>
+  <hr class="bta-rule">
+
+  <section id="joinCard" class="card">
+    <label for="pin">Code de la partie</label>
+    <input id="pin" class="full pinput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" autocomplete="off">
+    <label for="name">Votre nom (ou celui de votre équipe)</label>
+    <input id="name" class="full" maxlength="28" placeholder="Les Durcisseurs" autocomplete="off" spellcheck="false">
+    <button class="btn cta block" id="joinBtn">Rejoindre</button>
+    <p class="err" id="joinErr"></p>
+  </section>
+
+  <section id="lobby" class="card status hide">
+    <h2 id="lobbyName">…</h2>
+    <p class="muted">Vous êtes dans la partie. En attente du démarrage par l'animateur…</p>
+    <p class="hide" id="lobbyPos">Positionnement : répondez seul, sans aide, même au hasard si vous ne savez pas. Ce n'est pas noté : le résultat sert à choisir les modules du T0 qui vous seront utiles.</p>
+  </section>
+
+  <section id="q" class="card qcard hide">
+    <div class="scorebar"><span id="qTheme" class="muted">Thème</span><span class="timer" id="qTimer">20</span><span id="qScore" class="mono">0 pt</span></div>
+    <div class="qhead" id="qText"></div>
+    <div class="grid" id="opts"></div>
+    <div id="waitAns" class="status hide"><h2>Réponse enregistrée</h2><p class="muted">Attendez la suite…</p></div>
+  </section>
+
+  <section id="res" class="card status hide">
+    <div class="big" id="resIcon"></div>
+    <h2 id="resText"></h2>
+    <p id="resPts" class="muted"></p>
+    <p id="resRank"></p>
+  </section>
+
+  <section id="end" class="card status hide">
+    <div class="big">🏁</div>
+    <h2 id="endRank"></h2>
+    <p id="endScore" class="muted"></p>
+    <ul class="modlist hide" id="endModules"></ul>
+    <p class="hide" id="endAdvice"></p>
+  </section>
+</div>
+<script src="/commun/bta-quiz.js"></script>
+<script src="/play.js"></script>
+</body>
+</html>

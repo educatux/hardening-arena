@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardening Arena — quiz de cybersécurité</title>
+<meta name="description" content="Hardening Arena par BlueTeam Academy : des quiz de cybersécurité pour durcir ses réflexes de défenseur. En salle sur téléphone, au vidéoprojecteur, ou seul pour s'entraîner. Sans compte, sans traceur.">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="/commun/bta-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/commun/bta-quiz.css">
+<link rel="stylesheet" href="/accueil/accueil.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bta-header">
+    <div class="bta-brand">
+      <img class="bta-mark" src="/commun/bta-logo.svg" alt="BlueTeam Academy">
+      <div class="bta-name"><span class="bta-game">Hardening Arena</span><span class="bta-by">par BlueTeam <b>Academy</b></span></div>
+    </div>
+    <button class="btn ghost" id="themeBtn" title="Basculer thème clair / sombre">Thème clair / sombre</button>
+  </header>
+  <hr class="bta-rule">
+
+  <section class="hero">
+    <h1>Durcir ses réflexes<br>de défenseur.</h1>
+    <p class="lead">Hardening Arena, ce sont des quiz de cybersécurité nés en formation : on joue en salle sur son téléphone ou son PC, on révise au vidéoprojecteur, ou on s'entraîne seul, à son rythme. Après chaque question, la bonne réponse <b>et le point de cours</b> qui va avec.</p>
+    <div class="controls">
+      <a class="btn cta" href="/arena/entrainement.html">▶ S'entraîner seul</a>
+      <a class="btn" href="/play">Rejoindre une partie en salle</a>
+    </div>
+    <p class="muted small">Sans compte, sans publicité, sans traceur. Rien n'est envoyé ailleurs que sur ce serveur.</p>
+  </section>
+
+  <section class="card">
+    <h2>Pourquoi « Hardening Arena » ?</h2>
+    <div class="cols">
+      <div>
+        <h3><span class="tag">Hardening</span> le durcissement</h3>
+        <p>C'est le geste de base du défenseur : retirer d'un système tout ce qui ne sert pas, le configurer au plus strict, le tenir à jour. Bref, <b>réduire sa surface d'attaque</b>. Ces quiz sont nés pour le diagnostic d'ouverture de la formation « Hardening » de BlueTeam Academy, dont l'épreuve finale consiste à durcir un serveur piégé.</p>
+      </div>
+      <div>
+        <h3><span class="tag">Arena</span> l'arène</h3>
+        <p>On s'y mesure, en équipe, en direct : code de partie, réponses sur téléphone ou PC, points selon la rapidité, classement et podium. Le jeu fait passer des notions arides, et l'erreur y est permise : elle est suivie, aussitôt, de l'explication.</p>
+      </div>
+    </div>
+    <p class="punch">Une connaissance se durcit comme un système : par la répétition. On se trompe, on lit le point de cours, on recommence.</p>
+  </section>
+
+  <section class="card">
+    <h2>Trois façons de jouer</h2>
+    <div class="modes">
+      <div class="mode">
+        <div class="ico">📱</div>
+        <h3>En salle, sur téléphone ou PC</h3>
+        <p>Le formateur projette la question ; chacun répond depuis son téléphone ou son PC, avec le code de la partie. Score selon la rapidité, classement en direct. Un mode <b>positionnement</b> donne à chacun son bilan par module.</p>
+        <a href="/play">Rejoindre une partie →</a>
+      </div>
+      <div class="mode">
+        <div class="ico">🖥️</div>
+        <h3>Au vidéoprojecteur</h3>
+        <p>Sans téléphone ni réseau : les équipes répondent à l'oral, le formateur révèle la réponse et attribue les points. La roue de secours quand le Wi-Fi tombe.</p>
+        <a href="/arena/">Ouvrir le mode équipes →</a>
+      </div>
+      <div class="mode">
+        <div class="ico">🎯</div>
+        <h3>Seul, pour s'entraîner</h3>
+        <p>À votre rythme : correction et point de cours après chaque réponse, bilan par thème, puis <b>« Refaire mes erreurs »</b> jusqu'au sans-faute. Les réponses changent de place à chaque passage.</p>
+        <a href="/arena/entrainement.html">S'entraîner →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Les quiz en libre service</h2>
+    <p class="muted">Un quiz est publié ici <b>après</b> avoir été joué en formation : avant, ses réponses restent réservées à la séance.</p>
+    <ul class="quizlist" id="quizList"></ul>
+    <p class="muted hide" id="quizNone">Aucun quiz n'est encore en libre service. Revenez bientôt.</p>
+    <p class="muted small">Thèmes déjà écrits pour les formations : Linux et son durcissement, conteneurs, PKI et certificats, TLS, DNS et DNSSEC, messagerie, reverse proxy et haute disponibilité, WAF.</p>
+  </section>
+
+  <section class="card">
+    <h2>Nos principes</h2>
+    <ul class="principes">
+      <li><b>Aucun compte</b> : en salle, un pseudonyme suffit ; il n'est gardé qu'en mémoire, et disparaît du serveur au plus tard 10 minutes après la fin de la partie.</li>
+      <li><b>Aucun traceur</b> : ni publicité, ni cookie, ni script de mesure, ni police ou script tiers. La fréquentation est comptée à partir des seuls journaux du serveur, adresses IP tronquées. Votre meilleur score et votre thème restent dans votre navigateur.</li>
+      <li><b>Sécurité d'abord</b> : chiffrement, politique de sécurité de contenu stricte, limitation des tentatives. C'est un outil de défenseurs : il se doit d'être exemplaire.</li>
+      <li><b>Libre</b> : code sous licence MIT, auto-hébergeable en une commande (Docker) : <a href="https://github.com/educatux/hardening-arena" rel="noopener">github.com/educatux/hardening-arena</a>.</li>
+    </ul>
+  </section>
+
+  <footer class="muted">
+    Hardening Arena par BlueTeam Academy ·
+    <a href="/accueil/mentions-legales.html">Mentions légales et confidentialité</a> ·
+    <a href="/animateur">Espace formateur</a>
+  </footer>
+</div>
+<script src="/commun/bta-quiz.js"></script>
+<script src="/arena/quizzes.js"></script>
+<script src="/accueil/accueil.js"></script>
+</body>
+</html>

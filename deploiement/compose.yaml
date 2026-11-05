@@ -1,0 +1,119 @@
+# Hardening Arena (BlueTeam Academy) — déploiement exposé à Internet derrière Caddy.
+#
+#   cd deploiement && docker compose up -d --build      (après création du .env, voir README)
+#
+# Le service Node reprend la définition de ../quiz-buzz/docker-compose.yml (extends) :
+# lecture seule, cap_drop ALL, no-new-privileges, limites. Une seule différence, plus
+# stricte : son port n'est publié NULLE PART (pas même 127.0.0.1). Il vit sur un réseau
+# Docker « internal » qu'il partage avec Caddy seul : 8080 n'est joignable ni depuis
+# Internet ni depuis le LAN, et le service ne peut lui-même rien joindre à l'extérieur.
+# Seul Caddy écoute sur 80/443.
+name: hardening-arena
+
+x-journaux: &journaux
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }   # rotation : 50 Mo max par service
+
+services:
+  quiz-buzz:
+    extends:
+      file: ../quiz-buzz/docker-compose.yml
+      service: quiz-buzz
+    container_name: ${QUIZ_CONTAINER:-hardening-arena-buzz}
+    ports: !reset []
+    environment:
+      HOST_KEY: "${HOST_KEY:?HOST_KEY manquant dans .env}"
+      TRUST_PROXY: "1"            # adresse client réelle (X-Real-IP posé par Caddy)
+    networks: [quiz-internal]
+    cpus: "1.0"                   # un abus (bcrypt, connexions) ne doit pas saturer la machine hôte
+    pids_limit: 200
+    <<: *journaux
+
+  caddy:
+    build: ./caddy
+    image: hardening-arena-caddy:local
+    container_name: ${PROXY_CONTAINER:-hardening-arena-caddy}
+    restart: unless-stopped
+    depends_on: [quiz-buzz]
+    ports:
+      - "80:80"                   # redirection HTTPS + challenge ACME HTTP-01
+      - "443:443"
+      - "443:443/udp"             # HTTP/3
+    environment:
+      # Lus par le Caddyfile ({$VAR}). Les hachés bcrypt viennent du .env (entre
+      # guillemets simples : sinon compose interpréterait les « $ »).
+      SITE_ADDRESS: "${SITE_ADDRESS:?SITE_ADDRESS manquant dans .env}"
+      FORMATEUR_HASH: "${FORMATEUR_HASH:?FORMATEUR_HASH manquant dans .env}"
+      CLASSE_USER: "${CLASSE_USER:-classe}"
+      SEANCE_HASH: "${SEANCE_HASH:?SEANCE_HASH manquant dans .env}"
+      ARENA_SCRIPT_HASH: "${ARENA_SCRIPT_HASH:-}"
+      ARENA_STYLE_HASH: "${ARENA_STYLE_HASH:-}"
+      # Exposition : « direct » (ce Caddy reçoit Internet, Let's Encrypt) ou « amont »
+      # (un autre reverse proxy, d'IP AMONT_IP, termine le TLS public et relaie ici).
+      MODE_EXPOSITION: "${MODE_EXPOSITION:-direct}"
+      AMONT_IP: "${AMONT_IP:-127.0.0.1/32}"
+    volumes:
+      # Répertoire, pas le Caddyfile seul : un bind-mount de fichier reste accroché à
+      # l'ancien inode quand le fichier est remplacé (rsync, éditeur) → « caddy reload »
+      # relirait l'ancienne version.
+      - ./caddy/conf:/etc/caddy:ro
+      - ../quiz-app:/srv/arena:ro   # version statique, servie sous /arena/
+      - ../accueil:/srv/accueil:ro  # page d'accueil publique (/, /accueil/*)
+      - caddy-logs:/var/log/caddy   # journal d'accès, IP masquées (lu par GoAccess)
+      - stats-html:/srv/stats:ro    # rapport d'audience, servi sous /stats/ (compte formateur)
+      - caddy-data:/data            # certificats Let's Encrypt : seul état à conserver
+      - caddy-config:/config
+    networks: [quiz-internal, sortie]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: "1.0"                   # bcrypt de la Basic auth : borne le coût d'un abus
+    pids_limit: 200
+    <<: *journaux
+
+  # Mesure d'audience : lancé à la demande ou chaque nuit (outils/stats.sh, timer systemd posé
+  # par installer-stats.sh), jamais en continu. Lit le journal de Caddy (IP déjà masquées),
+  # écrit un rapport HTML statique. Aucun réseau, système de fichiers en lecture seule.
+  goaccess:
+    image: allinurl/goaccess:1.12@sha256:9e6dfd4abce94bd7c2907c1840b7b35f666587d56b24ffbb930b4782a87ea172
+    profiles: [stats]
+    user: "0:0"                   # le journal de Caddy est en 0600 root
+    network_mode: none
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: "0.5"
+    volumes:
+      - caddy-logs:/var/log/caddy:ro
+      - stats-html:/srv/stats
+      - stats-db:/var/lib/goaccess
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        [ -s /var/log/caddy/access.log ] || { echo "journal vide : rien à analyser"; exit 0; }
+        R=""; [ -n "$$(ls -A /var/lib/goaccess)" ] && R="--restore"
+        goaccess /var/log/caddy/access.log --log-format=CADDY --tz=Europe/Paris \
+          --persist $$R --db-path=/var/lib/goaccess --keep-last=400 \
+          --ignore-crawlers --anonymize-ip \
+          --html-report-title="Hardening Arena — audience" \
+          -o /srv/stats/index.html
+        echo "rapport : /srv/stats/index.html"
+
+networks:
+  quiz-internal:
+    internal: true
+  sortie: {}                      # Caddy seul : Let's Encrypt + clients
+
+volumes:
+  caddy-data:
+  caddy-config:
+  caddy-logs:
+  stats-html:
+  stats-db:

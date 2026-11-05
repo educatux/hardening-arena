@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardening Arena — Entraînement</title>
+<meta name="description" content="Hardening Arena par BlueTeam Academy : s'entraîner seul, correction et point de cours à chaque question.">
+<link rel="icon" href="../commun/bta-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../commun/bta-quiz.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bta-header">
+    <div class="bta-brand">
+      <img class="bta-mark" src="../commun/bta-logo.svg" alt="BlueTeam Academy">
+      <div class="bta-name"><span class="bta-game">Hardening Arena</span><span class="bta-by">par BlueTeam <b>Academy</b></span></div>
+    </div>
+    <button class="btn ghost" id="themeBtn" title="Basculer thème clair / sombre">Thème clair / sombre</button>
+  </header>
+  <hr class="bta-rule">
+
+  <p class="err hide" id="loadErr">Fichiers manquants : gardez <code>quiz-app/</code>, <code>commun/</code> et <code>quizzes.js</code> ensemble (voir README).</p>
+
+  <!-- ACCUEIL -->
+  <section id="home" class="card">
+    <h1>S'entraîner seul</h1>
+    <p class="muted">Répondez à votre rythme : après chaque réponse, la correction et le point de cours s'affichent. À la fin, votre score par thème et la liste de vos erreurs, à refaire autant de fois que vous voulez.</p>
+    <p class="err hide" id="emptyInfo">Aucun quiz n'est encore en libre service : ils sont publiés après avoir été joués en formation. Revenez bientôt.</p>
+    <div class="row">
+      <select id="quizSel" class="grow" aria-label="Choisir le quiz"></select>
+    </div>
+    <div class="row opts">
+      <label for="countSel">Questions</label>
+      <select id="countSel" aria-label="Nombre de questions">
+        <option value="0">Toutes</option>
+        <option value="10">10 au hasard</option>
+        <option value="20">20 au hasard</option>
+      </select>
+      <label class="check"><input type="checkbox" id="shuffleChk" checked> Ordre aléatoire</label>
+    </div>
+    <p class="muted" id="bestInfo"></p>
+    <div class="controls">
+      <button class="btn cta" id="startBtn">▶ Commencer</button>
+      <a class="btn ghost" href="index.html">Mode vidéoprojecteur (équipes)</a>
+    </div>
+    <p class="muted small">Raccourcis : <kbd>1</kbd> à <kbd>4</kbd> pour répondre, <kbd>Entrée</kbd> ou <kbd>→</kbd> pour la question suivante. Rien n'est envoyé sur Internet : votre meilleur score reste dans ce navigateur.</p>
+  </section>
+
+  <!-- QUESTION -->
+  <section id="quiz" class="card hide">
+    <div class="qtop">
+      <span class="badge theme" id="themeBadge">Thème</span>
+      <span class="badge" id="qnum">1 / 10</span>
+      <span class="badge" id="scoreBadge">0 ✔</span>
+    </div>
+    <div class="question" id="qtext"></div>
+    <div class="answers" id="answers"></div>
+    <div class="reveal hide" id="reveal"></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="controls">
+      <button class="btn cta" id="nextBtn" disabled>Question suivante →</button>
+      <button class="btn ghost" id="stopBtn">Arrêter et voir mon bilan</button>
+    </div>
+  </section>
+
+  <!-- BILAN -->
+  <section id="end" class="card hide">
+    <div class="status">
+      <div class="big" id="endIcon"></div>
+      <h2 id="endScore"></h2>
+      <p class="muted" id="endBest"></p>
+    </div>
+    <h3 id="groupTitle">Par thème</h3>
+    <ul class="modlist" id="endThemes"></ul>
+    <h3 id="errTitle">Vos erreurs</h3>
+    <div id="errList"></div>
+    <div class="controls center">
+      <button class="btn cta" id="retryErr">Refaire mes erreurs</button>
+      <button class="btn" id="again">Recommencer</button>
+      <button class="btn ghost" id="other">Changer de quiz</button>
+    </div>
+  </section>
+
+  <footer class="muted">Hardening Arena par BlueTeam Academy · entraînement autonome, hors-ligne, sans dépendance.</footer>
+</div>
+
+<script src="../commun/bta-quiz.js"></script>
+<script src="quizzes.js"></script>
+<script src="entrainement.js"></script>
+</body>
+</html>

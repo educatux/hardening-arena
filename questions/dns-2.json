@@ -1,0 +1,186 @@
+{
+  "titre": "Hardening Arena — DNS (2/2) : certificats, messagerie, SSH",
+  "graine": 8,
+  "questions": [
+    {
+      "theme": "CAA",
+      "module": "D4",
+      "question": "L'enregistrement CAA d'un domaine indique...",
+      "bonne": "Quelles autorités de certification ont le droit d'émettre pour lui",
+      "pieges": ["Le certificat actuel du site", "La date d'expiration du domaine", "Le serveur qui chiffre le DNS"],
+      "temps": 30,
+      "revision": "exemple.fr CAA 0 issue \"letsencrypt.org\" : seule Let's Encrypt peut émettre. Une AC publique doit consulter la CAA avant d'émettre (obligatoire depuis septembre 2017)."
+    },
+    {
+      "theme": "CAA",
+      "module": "D4",
+      "question": "Un domaine n'a aucun enregistrement CAA. Alors...",
+      "bonne": "N'importe quelle AC publique peut émettre pour lui",
+      "pieges": ["Aucune AC ne peut émettre pour lui", "Seule l'AC du registrar peut émettre", "Le navigateur refuse ses certificats"],
+      "temps": 30,
+      "revision": "Pas de CAA = pas de restriction : des dizaines d'AC peuvent émettre. Deux lignes suffisent à réduire ce risque ; c'est gratuit et sans effet sur le site."
+    },
+    {
+      "theme": "CAA",
+      "module": "D4",
+      "question": "Qui vérifie l'enregistrement CAA ?",
+      "bonne": "L'autorité de certification, au moment d'émettre",
+      "pieges": ["Le navigateur, à chaque visite", "Le serveur web, au démarrage", "Le résolveur DNS de l'utilisateur"],
+      "temps": 30,
+      "revision": "La CAA protège en amont : une AC honnête refuse d'émettre. Elle ne protège pas contre une AC malhonnête ou piratée : pour la voir, il faut surveiller la Certificate Transparency."
+    },
+    {
+      "theme": "CAA",
+      "module": "D4",
+      "question": "La propriété « iodef » d'un enregistrement CAA sert à...",
+      "bonne": "Être prévenu quand une AC refuse une demande",
+      "pieges": ["Chiffrer la demande de certificat", "Autoriser les certificats wildcard", "Révoquer les anciens certificats"],
+      "temps": 30,
+      "revision": "CAA 0 iodef \"mailto:securite@exemple.fr\" : une adresse où l'AC peut signaler une tentative refusée. issuewild contrôle séparément les certificats *.exemple.fr."
+    },
+    {
+      "theme": "Transparence",
+      "module": "D4",
+      "question": "Pour savoir si un certificat a été émis pour votre domaine à votre insu, on consulte...",
+      "bonne": "Les journaux de Certificate Transparency (par exemple crt.sh)",
+      "pieges": ["L'enregistrement CAA", "Le fichier /etc/hosts", "Les journaux du résolveur DNS"],
+      "temps": 30,
+      "revision": "Toute AC publique enregistre ses certificats dans des journaux publics. crt.sh permet de chercher par domaine ; des services alertent à chaque nouvelle émission. CAA empêche, CT révèle."
+    },
+    {
+      "theme": "DANE",
+      "module": "D4",
+      "question": "Un enregistrement TLSA (DANE) publie dans le DNS...",
+      "bonne": "Le certificat ou la clé qu'un service TLS doit présenter",
+      "pieges": ["Le mot de passe du serveur", "La liste des AC interdites", "Le port du serveur web"],
+      "temps": 30,
+      "revision": "_443._tcp.www.exemple.fr TLSA 3 1 1 <empreinte> : « mon serveur présente cette clé ». N'a de valeur qu'avec DNSSEC. Peu utilisé par les navigateurs, mais réel entre serveurs de messagerie."
+    },
+    {
+      "theme": "SPF",
+      "module": "D5",
+      "question": "L'enregistrement SPF d'un domaine liste...",
+      "bonne": "Les serveurs autorisés à envoyer du courrier pour ce domaine",
+      "pieges": ["Les serveurs qui reçoivent son courrier", "Les adresses e-mail des employés", "Les domaines bloqués par l'antispam"],
+      "temps": 30,
+      "revision": "TXT \"v=spf1 ip4:192.0.2.25 include:_spf.hebergeur.net -all\". Recevoir, c'est le MX ; envoyer, c'est SPF. Le serveur destinataire compare l'IP de l'expéditeur à cette liste."
+    },
+    {
+      "theme": "SPF",
+      "module": "D5",
+      "question": "À la fin d'un SPF, « -all » signifie...",
+      "bonne": "Tout autre serveur doit être rejeté",
+      "pieges": ["Tous les serveurs sont autorisés", "Le SPF est désactivé", "Accepter mais marquer comme suspect"],
+      "temps": 30,
+      "revision": "-all = échec (rejet) ; ~all = échec « doux » (accepter, marquer) ; ?all = neutre ; +all = tout le monde autorisé (une erreur grave). Limite à connaître : 10 recherches DNS au maximum."
+    },
+    {
+      "theme": "SPF",
+      "module": "D5",
+      "question": "Pourquoi SPF seul ne suffit-il pas contre l'usurpation ?",
+      "bonne": "Il ne contrôle pas l'adresse « De : » que voit le destinataire",
+      "pieges": ["Il est chiffré", "Il ne fonctionne qu'en IPv6", "Il ralentit l'envoi des mails"],
+      "temps": 30,
+      "revision": "SPF vérifie l'expéditeur technique (l'enveloppe, « MAIL FROM »), pas le « De : » affiché. Un escroc peut passer SPF avec son propre domaine et afficher le vôtre. C'est DMARC qui fait le lien."
+    },
+    {
+      "theme": "DKIM",
+      "module": "D5",
+      "question": "DKIM permet de...",
+      "bonne": "Signer le message ; la clé publique est publiée dans le DNS",
+      "pieges": ["Chiffrer le message pour le destinataire", "Lister les serveurs d'envoi", "Bloquer les pièces jointes"],
+      "temps": 30,
+      "revision": "Le serveur d'envoi signe en-têtes et corps ; la clé publique est en TXT sous <sélecteur>._domainkey.exemple.fr. Message modifié = signature invalide. Même principe que la signature du quiz PKI."
+    },
+    {
+      "theme": "DMARC",
+      "module": "D5",
+      "question": "DMARC ajoute à SPF et DKIM...",
+      "bonne": "L'alignement avec le « De : » et une politique en cas d'échec",
+      "pieges": ["Le chiffrement des mails", "Une liste noire mondiale", "La signature des pièces jointes"],
+      "temps": 30,
+      "revision": "_dmarc.exemple.fr TXT \"v=DMARC1; p=reject; rua=mailto:dmarc@exemple.fr\". DMARC exige que SPF ou DKIM valide le domaine du « De : », et dit au destinataire quoi faire sinon."
+    },
+    {
+      "theme": "DMARC",
+      "module": "D5",
+      "question": "Une politique DMARC « p=none » signifie...",
+      "bonne": "Observer seulement : les mails usurpés sont livrés",
+      "pieges": ["Rejeter tous les mails du domaine", "DMARC est mal configuré et ignoré", "Les mails sont chiffrés"],
+      "temps": 30,
+      "revision": "none = observer (et recevoir les rapports rua) ; quarantine = indésirables ; reject = refus. On commence par none pour voir qui envoie, puis on durcit. Rester à none pour toujours ne protège personne."
+    },
+    {
+      "theme": "DMARC",
+      "module": "D5",
+      "question": "Les rapports DMARC « rua » servent à...",
+      "bonne": "Savoir qui envoie du courrier en votre nom, légitime ou non",
+      "pieges": ["Recevoir une copie de tous les mails", "Débloquer les mails en quarantaine", "Payer le service DMARC"],
+      "temps": 30,
+      "revision": "Chaque jour, les grands destinataires envoient des statistiques : quelles IP ont utilisé votre domaine, et le résultat SPF/DKIM. Indispensable avant de passer à p=reject, et pour détecter une usurpation."
+    },
+    {
+      "theme": "MTA-STS",
+      "module": "D5",
+      "question": "MTA-STS protège le courrier entre serveurs contre...",
+      "bonne": "Le retour forcé au texte clair (STARTTLS supprimé en chemin)",
+      "pieges": ["Le spam", "Les pièces jointes malveillantes", "Les fautes de frappe dans les adresses"],
+      "temps": 30,
+      "revision": "Entre serveurs, le chiffrement (STARTTLS) est opportuniste : un attaquant peut le retirer. MTA-STS publie « chez moi, TLS obligatoire, avec un certificat valide » (TXT _mta-sts + fichier en HTTPS)."
+    },
+    {
+      "theme": "TLS-RPT",
+      "module": "D5",
+      "question": "L'enregistrement _smtp._tls (TLS-RPT) sert à...",
+      "bonne": "Recevoir des rapports sur les échecs de chiffrement vers vos serveurs",
+      "pieges": ["Activer TLS sur le serveur web", "Remplacer MTA-STS", "Signer les mails"],
+      "temps": 30,
+      "revision": "Compagnon de MTA-STS et de DANE : les autres serveurs vous signalent les connexions qui n'ont pas pu être chiffrées. Une attaque de rétrogradation devient visible."
+    },
+    {
+      "theme": "Null MX",
+      "module": "D5",
+      "question": "Un domaine n'envoie et ne reçoit jamais de mail. On publie...",
+      "bonne": "Un MX nul, un SPF « -all » et un DMARC « p=reject »",
+      "pieges": ["Rien : sans MX, il est protégé", "Seulement un MX vers le serveur web", "Un SPF « +all »"],
+      "temps": 30,
+      "revision": "MX 0 . (RFC 7505) : « je ne reçois rien ». v=spf1 -all : « personne n'envoie pour moi ». p=reject : « refusez tout ce qui prétend venir de moi ». Les domaines inactifs sont des cibles faciles d'usurpation."
+    },
+    {
+      "theme": "SSHFP",
+      "module": "D6",
+      "question": "L'enregistrement SSHFP publie...",
+      "bonne": "L'empreinte des clés d'hôte d'un serveur SSH",
+      "pieges": ["La clé privée de l'administrateur", "La liste des utilisateurs SSH", "Le port SSH du serveur"],
+      "temps": 30,
+      "revision": "ssh-keygen -r <nom> génère les SSHFP. Avec ssh -o VerifyHostKeyDNS=yes, le client vérifie la clé du serveur dans le DNS au lieu de demander « Are you sure you want to continue connecting ? »."
+    },
+    {
+      "theme": "SSHFP",
+      "module": "D6",
+      "question": "Pour que le client SSH fasse confiance à un SSHFP sans rien demander, il faut...",
+      "bonne": "Que la zone soit signée DNSSEC et la réponse validée",
+      "pieges": ["Que le serveur utilise RSA", "Que le port 22 soit fermé", "Que l'utilisateur soit root"],
+      "temps": 30,
+      "revision": "Sans DNSSEC, un attaquant qui ment au DNS mentirait aussi sur l'empreinte. Avec une réponse validée (ad), le premier contact SSH (TOFU) devient vérifiable. Toujours la même chaîne de confiance."
+    },
+    {
+      "theme": "HTTPS RR",
+      "module": "D6",
+      "question": "Le nouvel enregistrement HTTPS (type 65) permet notamment de...",
+      "bonne": "Annoncer HTTP/3 et les clés du chiffrement du nom du site (ECH)",
+      "pieges": ["Remplacer le certificat TLS", "Stocker le contenu de la page", "Bloquer HTTP"],
+      "temps": 30,
+      "revision": "RFC 9460 (2023) : le navigateur apprend dès la résolution les protocoles (h3) et les clés ECH, qui chiffrent le nom du site dans la poignée TLS. Moins de fuite, moins d'allers-retours."
+    },
+    {
+      "theme": "Adoption",
+      "module": "D6",
+      "question": "CAA, DMARC « reject », MTA-STS, DNSSEC : pourquoi si peu de domaines les ont ?",
+      "bonne": "Peu connus, et la peur de casser le site ou le mail",
+      "pieges": ["Ils sont payants", "Ils sont interdits en Europe", "Ils ralentissent fortement le DNS"],
+      "temps": 30,
+      "revision": "Tous gratuits et normalisés. Les freins : méconnaissance, peur de bloquer un envoi légitime, personne n'en est responsable. Votre audit vient de le mesurer : c'est un levier simple pour un administrateur."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# Contexte = diagnostic/ : on n'envoie au build que le strict nécessaire.
+*
+!quiz-buzz/package.json
+!quiz-buzz/package-lock.json
+!quiz-buzz/server.js
+!quiz-buzz/quizzes
+!quiz-buzz/public
+!commun

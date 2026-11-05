@@ -6,6 +6,10 @@ updates:
   - package-ecosystem: docker
     directory: /quiz-buzz
     schedule: { interval: weekly }
+    ignore:
+      # Node : on ne suit que les LTS (versions paires), montées de version majeure faites à la main.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /deploiement/caddy
     schedule: { interval: weekly }
